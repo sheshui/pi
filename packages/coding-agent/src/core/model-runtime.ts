@@ -32,6 +32,7 @@ import {
 import * as builtinProviderCatalog from "@earendil-works/pi-ai/providers/all";
 import { getAgentDir } from "../config.ts";
 import { AuthStorage as DefaultAuthStorage } from "./auth-storage.ts";
+import { llmLogger } from "./llm-logger.ts";
 import { ModelConfig } from "./model-config.ts";
 import { FileModelsStore, InMemoryCodingAgentModelsStore } from "./models-store.ts";
 import {
@@ -468,7 +469,8 @@ export class ModelRuntime implements Models {
 		context: Context,
 		options?: ModelsApiStreamOptions<TApi>,
 	): AssistantMessageEventStream {
-		return lazyStream(model, async () => {
+		const callId = llmLogger.logRequestStart(model.provider, model.id, context, options);
+		const stream = lazyStream(model, async () => {
 			const prepared = await this.prepareRequest(
 				model,
 				options as (StreamOptions & ModelsStreamTransforms) | undefined,
@@ -479,6 +481,7 @@ export class ModelRuntime implements Models {
 				prepared.options as ApiStreamOptions<TApi>,
 			);
 		});
+		return llmLogger.wrapStream(stream, callId, model.provider, model.id, context, options);
 	}
 
 	complete<TApi extends Api>(
@@ -490,10 +493,12 @@ export class ModelRuntime implements Models {
 	}
 
 	streamSimple(model: Model<Api>, context: Context, options?: ModelsSimpleStreamOptions): AssistantMessageEventStream {
-		return lazyStream(model, async () => {
+		const callId = llmLogger.logRequestStart(model.provider, model.id, context, options);
+		const stream = lazyStream(model, async () => {
 			const prepared = await this.prepareRequest(model, options);
 			return prepared.provider.streamSimple(prepared.model, context, prepared.options as SimpleStreamOptions);
 		});
+		return llmLogger.wrapStream(stream, callId, model.provider, model.id, context, options);
 	}
 
 	completeSimple(model: Model<Api>, context: Context, options?: ModelsSimpleStreamOptions): Promise<AssistantMessage> {

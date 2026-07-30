@@ -126,6 +126,12 @@ export interface Settings {
 	httpProxy?: string; // Proxy URL applied as HTTP_PROXY and HTTPS_PROXY for Pi-managed HTTP clients
 	httpIdleTimeoutMs?: number; // HTTP header/body idle timeout in milliseconds; 0 disables it
 	websocketConnectTimeoutMs?: number; // WebSocket connect/open handshake timeout in milliseconds; 0 disables it
+	llmLogger?: LlmLoggerSettings;
+}
+
+export interface LlmLoggerSettings {
+	enabled?: boolean; // default: false
+	dir?: string; // Directory for log files (default: ~/.pi/llm-logs)
 }
 
 /** Deep merge settings: project/overrides take precedence, nested objects merge recursively */
@@ -670,6 +676,10 @@ export class SettingsManager {
 	getSessionDir(): string | undefined {
 		const sessionDir = this.settings.sessionDir;
 		return sessionDir ? normalizePath(sessionDir) : sessionDir;
+	}
+
+	getLlmLoggerSettings(): LlmLoggerSettings | undefined {
+		return this.settings.llmLogger;
 	}
 
 	getDefaultProvider(): string | undefined {
