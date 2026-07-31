@@ -10,13 +10,15 @@ import {
 	formatSkillInvocation,
 	formatSkillsForSystemPrompt,
 	getOrThrow,
-	InMemorySessionRepo,
+	InMemorySessionStore,
 	ok,
 	parseCommandArgs,
+	SessionRepo,
 	streamProxy,
 	toError,
 	truncateHead,
 } from "@earendil-works/pi-agent-core";
+import { decodeCbor, encodeCbor, PROTOCOL_VERSION } from "@earendil-works/pi-protocol";
 
 // Keep this entry browser-safe. It is bundled by scripts/check-browser-smoke.mjs
 // to catch accidental Node-only runtime imports in browser-facing package exports.
@@ -26,7 +28,7 @@ const stream = createAssistantMessageEventStream();
 
 const agent = new Agent({ initialState: { model }, streamFn: streamSimple });
 agent.steer({ role: "user", content: [{ type: "text", text: "queued" }], timestamp: 0 });
-const repo = new InMemorySessionRepo();
+const repo = new SessionRepo({ store: new InMemorySessionStore() });
 const result = getOrThrow(ok({ value: 1 }));
 const customMessage = createCustomMessage("note", "hello", true, undefined, "2026-01-01T00:00:00.000Z");
 const llmMessages = convertToLlm([customMessage]);
@@ -58,4 +60,6 @@ console.log(
 	new FileError("not_found", "missing").code,
 	toError("boom").message,
 	typeof streamProxy,
+	PROTOCOL_VERSION,
+	decodeCbor(encodeCbor({ browser: true })),
 );
